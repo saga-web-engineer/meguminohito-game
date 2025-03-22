@@ -10,6 +10,9 @@ import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import java.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import com.example.room.RoomManager
+
+val clients: MutableList<WebSocketSession> = mutableListOf()
 
 fun Application.configureSockets() {
     install(WebSockets) {
@@ -19,15 +22,43 @@ fun Application.configureSockets() {
         masking = false
     }
     routing {
-        webSocket("/ws") { // websocketSession
-            for (frame in incoming) {
-                if (frame is Frame.Text) {
-                    val text = frame.readText()
-                    outgoing.send(Frame.Text("YOU SAID: $text"))
-                    if (text.equals("bye", ignoreCase = true)) {
-                        close(CloseReason(CloseReason.Codes.NORMAL, "Client said BYE"))
+        webSocket("/ws/{roomId}") {
+            clients.add(this)
+            val roomId = call.parameters["roomId"] ?: return@webSocket close(
+                CloseReason(
+                    CloseReason.Codes.VIOLATED_POLICY,
+                    "No Room ID"
+                )
+            )
+            val room = RoomManager.getRoom(roomId)
+            room.addPlayer(this)
+
+            try {
+                for (frame in incoming) {
+
+                    if (frame is Frame.Text) {
+                        val message = frame.readText()
+                        println(message)
+                        println(message)
+                        println(message)
+                        println(message)
+                        println(message)
+                        if (message in listOf("グー", "チョキ", "パー")) {
+                            room.setHand(this, message)
+                            room.notifyOtherPlayers(this, "相手が $message を出しました！")
+                            room.checkAndJudge()
+                        } else {
+                            clients.forEach {
+                                it.send("無効な手です: $message")
+                            }
+                        }
                     }
                 }
+            } catch (e: Exception) {
+                println(e)
+            } finally {
+                room.removePlayer(this)
+                clients.remove(this)
             }
         }
     }
