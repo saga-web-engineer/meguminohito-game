@@ -7,7 +7,7 @@ export const Footer: FC = () => {
     <footer className="border-t py-4">
       <Wrapper>
         <p className="text-center">
-          <small>&copy; 〇〇〇 2023 - {new Date().getFullYear()}</small>
+          <small>&copy; 2025 Kume Yuta{/*  - {new Date().getFullYear()} */}</small>
         </p>
       </Wrapper>
     </footer>
