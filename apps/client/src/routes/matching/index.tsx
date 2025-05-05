@@ -1,54 +1,74 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Loader2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { MetaData } from '../../components/MetaData';
-import { SITE_NAME, SITE_URL } from '../../utils/siteSetting';
+import { PORT, SITE_NAME, SITE_URL } from '../../utils/siteSetting';
 
 export const Route = createFileRoute('/matching/')({
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  const title = `ルームに接続中 | ${SITE_NAME}`;
-  const description = 'ルームに接続中です';
+  const title = `対戦相手を探しています | ${SITE_NAME}`;
+  const description = '対戦相手を探しています';
   const url = `${SITE_URL}/matching`;
-  const [message, setMessage] = useState<string>('対戦相手を探しています');
-  const navigate = useNavigate(); // tanstack routerのnavigateを使用
+
+  const navigate = useNavigate();
+  const [stateMessage, setStateMessage] = useState('対戦相手を探しています');
+  const [playerCount, setPlayerCount] = useState(0);
+  const socketRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    const socket = new WebSocket(`ws://127.0.0.1:8080/ws/matching`);
+    // WebSocketが既に存在する場合は作成しない
+    if (socketRef.current) return;
+
+    const socket = new WebSocket(`ws://${PORT}/ws/matching`);
+    socketRef.current = socket;
 
     socket.onopen = () => {
       console.log('[INFO] WebSocket connected');
-      socket.send(JSON.stringify({ type: 'matching' })); // 接続が確立された後にメッセージを送信
+      // 接続が確立された後にメッセージを送信
+      socket.send(JSON.stringify({ type: 'matching' }));
     };
 
     socket.onmessage = (event) => {
-      const message = event.data;
-      console.log('event', event);
-      console.log('[INFO] Received message:', message);
+      const data = Number(event.data);
 
-      if (message.startsWith('ルームに移動します: ')) {
-        const roomId = message.replace('ルームに移動します: ', '');
-        navigate({ to: `/room/${roomId}` }); // tanstack routerのnavigateを使用してリダイレクト
+      // 受信したデータが5以下の場合はプレイヤー人数として扱う
+      if (data <= 5) {
+        console.log('[INFO] プレイヤー人数:', data);
+        setPlayerCount(data);
       } else {
-        setMessage('対戦相手が見つかりました');
+        console.log('[INFO] ルームID:', data);
+        setStateMessage('ルームへ移動します');
+        setTimeout(() => {
+          navigate({ to: `/room/${data}` });
+        }, 2000);
       }
     };
 
-    // クリーンアップ処理を追加
+    socket.onerror = (error) => {
+      console.error('[ERROR] WebSocket error:', error);
+    };
+
     return () => {
       console.log('[INFO] WebSocket disconnected');
-      socket.close(); // WebSocketを閉じる
+      if (socketRef.current) {
+        socketRef.current.close();
+        socketRef.current = null;
+      }
     };
-  }, []);
+  }, [navigate]);
 
   return (
     <>
       <MetaData title={title} description={description} url={url} />
       <div className="flex h-full flex-col items-center justify-center gap-16">
-        <h1 className="mt-auto text-2xl">{message}</h1>
+        <div className="mt-auto">
+          <h1 className="text-2xl">{stateMessage}</h1>
+          <p className="mt-2 flex items-center justify-center">プレイヤー人数: {playerCount}</p>
+        </div>
         <div className="relative mb-auto animate-spin border-transparent px-4 py-2 text-center text-2xl">
           め
           <Loader2 className="absolute inset-0 m-auto animate-spin" size={56} />
