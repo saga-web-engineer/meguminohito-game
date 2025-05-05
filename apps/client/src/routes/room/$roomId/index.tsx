@@ -8,57 +8,44 @@ export const Route = createFileRoute('/room/$roomId/')({
 function RouteComponent() {
   const { roomId } = Route.useParams();
   const [ws, setWs] = useState<WebSocket | null>(null);
+  const [inputValue, setInputValue] = useState(''); // 入力値を管理するステートを追加
+
   useEffect(() => {
     const socket = new WebSocket(`ws://127.0.0.1:8080/ws/${roomId}`);
     setWs(socket);
 
     socket.onmessage = (event) => {
-      // ここは久米さんが書く
       try {
-        // const msg = JSON.parse(event.data);
-        // if (msg.type === 'requestName') {
-        //   setIsNameRequested(true); // 名前入力をリクエストされた状態にする
-        // } else if (msg.type === 'userList') {
-        //   setUsers(msg.users); // 参加者リストを更新
-        // } else if (msg.type === 'message') {
-        //   console.log(msg);
-        //   setMessages((prev) => [
-        //     ...prev,
-        //     { id: msg.id, name: msg.name, text: msg.text, likes: 0 },
-        //   ]);
-        // } else if (msg.type === 'like') {
-        //   setMessages((prev) =>
-        //     prev.map((message) =>
-        //       message.id === msg.messageId ? { ...message, likes: msg.likes } : message,
-        //     ),
-        //   );
-        // } else if (msg.type === 'image') {
-        //   setMessages((prev) => [
-        //     ...prev,
-        //     {
-        //       id: msg.id,
-        //       name: msg.name,
-        //       type: msg.type,
-        //       text: msg.text,
-        //       imageData: msg.imageData,
-        //       likes: 0,
-        //     },
-        //   ]);
-        // }
         console.log(event);
       } catch {
         console.warn('Received non-JSON message:', event.data);
       }
     };
 
-    return () => socket.close();
-  }, []);
+    return () => {
+      console.log('[INFO] WebSocket disconnected');
+      socket.close(); // WebSocketを閉じる
+    };
+  }, [roomId]); // roomIdが変わったときだけ再実行
+
+  const handleSend = () => {
+    if (ws) {
+      ws.send(inputValue); // 入力値を送信
+      setInputValue(''); // 入力値をリセット
+    }
+  };
 
   return (
     <>
-      <form action="">
-        <input type="text" />
-        <button type="button" onClick={() => ws?.send('undhi')}>
+      <form action="" onSubmit={(e) => e.preventDefault()}>
+        {' '}
+        {/* フォームのデフォルト動作を防止 */}
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)} // 入力値を更新
+        />
+        <button type="button" onClick={handleSend}>
           送信
         </button>
       </form>

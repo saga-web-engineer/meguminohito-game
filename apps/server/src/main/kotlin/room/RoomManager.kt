@@ -7,6 +7,14 @@ object RoomManager {
   private val rooms = ConcurrentHashMap<String, Room>()
 
   fun getRoom(roomId: String): Room = rooms.computeIfAbsent(roomId) { Room() }
+
+  fun removeRoomIfEmpty(roomId: String) {
+    val room = rooms[roomId]
+    if (room != null && room.isEmpty()) {
+      rooms.remove(roomId)
+      println("[INFO] Room $roomId has been removed because it is empty.")
+    }
+  }
 }
 
 class Room {
@@ -24,6 +32,10 @@ class Room {
 
   fun setHand(session: WebSocketSession, hand: String) {
     hands[session] = hand
+  }
+
+  fun isEmpty(): Boolean {
+    return players.isEmpty()
   }
 
   suspend fun notifyOtherPlayers(sender: WebSocketSession, message: String) {

@@ -11,8 +11,10 @@ import io.ktor.websocket.*
 import java.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import com.example.room.RoomManager
+import com.example.matching.MatchingManager
 
 val clients: MutableList<WebSocketSession> = mutableListOf()
+val matchingManager = MatchingManager()
 
 fun Application.configureSockets() {
     install(WebSockets) {
@@ -38,11 +40,7 @@ fun Application.configureSockets() {
 
                     if (frame is Frame.Text) {
                         val message = frame.readText()
-                        println(message)
-                        println(message)
-                        println(message)
-                        println(message)
-                        println(message)
+                        println(message) // メッセージを1回だけ出力
                         if (message in listOf("グー", "チョキ", "パー")) {
                             room.setHand(this, message)
                             room.notifyOtherPlayers(this, "相手が $message を出しました！")
@@ -57,8 +55,24 @@ fun Application.configureSockets() {
             } catch (e: Exception) {
                 println(e)
             } finally {
-                room.removePlayer(this)
+                room.removePlayer(this) // プレイヤーをルームから削除
+                RoomManager.removeRoomIfEmpty(roomId) // ルームが空なら削除
                 clients.remove(this)
+            }
+        }
+        webSocket("/ws/matching") {
+            matchingManager.addPlayer(this)
+            try {
+                for (frame in incoming) {
+                    if (frame is Frame.Text) {
+                        val message = frame.readText()
+                        println("[INFO] Received message: $message")
+                    }
+                }
+            } catch (e: Exception) {
+                println("[ERROR] Exception in WebSocket session: ${e.message}")
+            } finally {
+                matchingManager.removePlayer(this) // セッション終了時にプレイヤーを削除
             }
         }
     }
