@@ -1,5 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
+import { PORT } from '../../../utils/siteSetting';
 
 export const Route = createFileRoute('/room/$roomId/')({
   component: RouteComponent,
@@ -7,19 +9,18 @@ export const Route = createFileRoute('/room/$roomId/')({
 
 function RouteComponent() {
   const { roomId } = Route.useParams();
-  const [ws, setWs] = useState<WebSocket | null>(null);
   const [inputValue, setInputValue] = useState(''); // 入力値を管理するステートを追加
+  const socketRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    const socket = new WebSocket(`ws://127.0.0.1:8080/ws/${roomId}`);
-    setWs(socket);
+    // WebSocketが既に存在する場合は作成しない
+    if (socketRef.current) return;
+
+    const socket = new WebSocket(`ws://${PORT}/ws/${roomId}`);
+    socketRef.current = socket;
 
     socket.onmessage = (event) => {
-      try {
-        console.log(event);
-      } catch {
-        console.warn('Received non-JSON message:', event.data);
-      }
+      console.log('event.data', event.data);
     };
 
     return () => {
@@ -29,10 +30,10 @@ function RouteComponent() {
   }, [roomId]); // roomIdが変わったときだけ再実行
 
   const handleSend = () => {
-    if (ws) {
-      ws.send(inputValue); // 入力値を送信
-      setInputValue(''); // 入力値をリセット
-    }
+    // if (ws) {
+    //   ws.send(inputValue); // 入力値を送信
+    //   setInputValue(''); // 入力値をリセット
+    // }
   };
 
   return (

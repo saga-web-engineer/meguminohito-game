@@ -79,9 +79,5 @@ class MatchingManager {
       // 各プレイヤーにルームIDを通知
       player.send(roomId.toString())
     }
-
-    val room = RoomManager.getRoom(roomId.toString())
-    // プレイヤーをルームに追加
-    players.forEach { room.addPlayer(it) }
   }
 }

@@ -24,6 +24,22 @@ fun Application.configureSockets() {
     masking = false
   }
   routing {
+    webSocket("/ws/matching") {
+      matchingManager.addPlayer(this)
+      try {
+        for (frame in incoming) {
+          if (frame is Frame.Text) {
+            val message = frame.readText()
+            println("[INFO] メッセージを受信しました: $message")
+          }
+        }
+      } catch (e: Exception) {
+        println("[ERROR] WebSocketセッションでの例外発生: ${e.message}")
+      } finally {
+        matchingManager.removePlayer(this) // セッション終了時にプレイヤーを削除
+      }
+    }
+
     webSocket("/ws/{roomId}") {
       clients.add(this)
       val roomId = call.parameters["roomId"] ?: return@webSocket close(
@@ -53,26 +69,11 @@ fun Application.configureSockets() {
           }
         }
       } catch (e: Exception) {
-        println(e)
+        println("[ERROR] 例外が発生しました: ${e.message}")
       } finally {
         room.removePlayer(this) // プレイヤーをルームから削除
         RoomManager.removeRoomIfEmpty(roomId) // ルームが空なら削除
         clients.remove(this)
-      }
-    }
-    webSocket("/ws/matching") {
-      matchingManager.addPlayer(this)
-      try {
-        for (frame in incoming) {
-          if (frame is Frame.Text) {
-            val message = frame.readText()
-            println("[INFO] Received message: $message")
-          }
-        }
-      } catch (e: Exception) {
-        println("[ERROR] Exception in WebSocket session: ${e.message}")
-      } finally {
-        matchingManager.removePlayer(this) // セッション終了時にプレイヤーを削除
       }
     }
   }
