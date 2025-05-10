@@ -18,6 +18,7 @@ bin/
 
 ### IntelliJ IDEA ###
 .idea/*
+!.idea/encodings.xml
 !.idea/codeStyles/
 !.idea/codeStyles/Project.xml
 .idea/codeStyles/codeStyleConfig.xml
