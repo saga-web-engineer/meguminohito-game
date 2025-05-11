@@ -63,7 +63,7 @@ class MatchingManager {
       // 既存のタイマーがあればキャンセル
       timerJob?.cancel()
       timerJob = coroutineScope.launch {
-        delay(100000)
+        delay(10000)
         println("[DEBUG] タイマーが終了。待機プレイヤー: ${waitingPlayers.map { it.hashCode() }}")
         println("[INFO] タイマーが終了。待機プレイヤー数: ${waitingPlayers.size}")
 
