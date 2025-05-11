@@ -33,18 +33,24 @@ function RouteComponent() {
     };
 
     socket.onmessage = (event) => {
-      const data = Number(event.data);
+      const data = JSON.parse(event.data);
 
-      // 受信したデータが5以下の場合はプレイヤー人数として扱う
-      if (data <= 5) {
-        console.log('[INFO] プレイヤー人数:', data);
-        setPlayerCount(data);
-      } else {
-        console.log('[INFO] ルームID:', data);
-        setStateMessage('ルームへ移動します');
-        setTimeout(() => {
-          navigate({ to: `/room/${data}` });
-        }, 2000);
+      switch (data.type) {
+        case 'player':
+          console.log('[INFO] プレイヤー人数:', data.content);
+          setPlayerCount(data.content);
+          break;
+
+        case 'roomId':
+          console.log('[INFO] ルームID:', data.content);
+          setStateMessage('ルームへ移動します');
+          setTimeout(() => {
+            navigate({ to: `/room/${data.content}` });
+          }, 2000);
+          break;
+
+        default:
+          break;
       }
     };
 

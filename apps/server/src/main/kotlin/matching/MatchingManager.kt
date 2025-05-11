@@ -30,7 +30,7 @@ class MatchingManager {
       println("[INFO] 現在の待機プレイヤー数: ${waitingPlayers.size}")
       waitingPlayers.forEach { player ->
         // 現在の待機プレイヤー数を送信
-        player.send(waitingPlayers.size.toString())
+        player.send("""{"type": "player", "content": "${waitingPlayers.size.toString()}"}""")
       }
 
       if (waitingPlayers.size == 1) {
@@ -64,7 +64,7 @@ class MatchingManager {
 
         // 他のプレイヤーに通知
         waitingPlayers.forEach { player ->
-          player.send(waitingPlayers.size.toString())
+          player.send("""{"type": "player", "content": "${waitingPlayers.size.toString()}"}""")
         }
       }
     }
@@ -77,7 +77,7 @@ class MatchingManager {
 
     players.forEach { player ->
       // 各プレイヤーにルームIDを通知
-      player.send(roomId.toString())
+      player.send("""{"type": "roomId", "content": "${roomId.toString()}"}""")
     }
   }
 }
