@@ -4,28 +4,31 @@ import io.ktor.websocket.* // WebSocketセッションを扱うためのイン�
 import kotlinx.coroutines.sync.Mutex // 同期処理を行うためのミューテックス
 import kotlinx.coroutines.sync.withLock // ミューテックスを使ったロック処理
 import kotlinx.coroutines.delay // 一定時間待機するための関数
-import com.example.room.RoomManager
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MatchingManager {
   // 待機中のプレイヤーを格納するリスト
   private val waitingPlayers = mutableListOf<WebSocketSession>()
   // 同期処理を行うためのミューテックス
   private val mutex = Mutex()
+  private var timerJob: Job? = null
+  private val coroutineScope = CoroutineScope(Dispatchers.Default)
 
   suspend fun addPlayer(session: WebSocketSession) {
     println("[DEBUG] addPlayer() セッション: $session")
     println("[INFO] addPlayer() 現在の待機プレイヤー数: ${waitingPlayers.size}")
     var isFirstPlayer = false
+    var shouldStartImmediately = false
 
     mutex.withLock {
-      if (waitingPlayers.contains(session)) return
+      if (waitingPlayers.contains(session) || waitingPlayers.size >= 5) return
 
-      // 同じセッションがリストに追加されないようにする
-      if (!waitingPlayers.contains(session)) {
-        // 新しいプレイヤーを待機リストに追加
-        waitingPlayers.add(session)
-        println("[DEBUG] セッションが追加。現在の待機プレイヤー: ${waitingPlayers.map { it.hashCode() }}")
-      }
+      // 新しいプレイヤーを待機リストに追加
+      waitingPlayers.add(session)
+      println("[DEBUG] セッションが追加。現在の待機プレイヤー: ${waitingPlayers.map { it.hashCode() }}")
 
       println("[INFO] 現在の待機プレイヤー数: ${waitingPlayers.size}")
       waitingPlayers.forEach { player ->
@@ -37,21 +40,39 @@ class MatchingManager {
         // 最初のプレイヤーかどうかを判定
         isFirstPlayer = true
       }
+
+      // 5人揃ったら即座にゲーム開始
+      if (waitingPlayers.size == 5) {
+        shouldStartImmediately = true
+      }
+    }
+
+    if (shouldStartImmediately) {
+      // タイマーが動いていればキャンセル
+      timerJob?.cancel()
+      timerJob = null
+      mutex.withLock {
+        val playersToStart = waitingPlayers.take(5)
+        waitingPlayers.removeAll(playersToStart)
+        startGame(playersToStart)
+      }
+      return
     }
 
     if (isFirstPlayer) {
-      delay(10000)
-      println("[DEBUG] タイマーが終了。待機プレイヤー: ${waitingPlayers.map { it.hashCode() }}")
-      println("[INFO] タイマーが終了。待機プレイヤー数: ${waitingPlayers.size}")
+      // 既存のタイマーがあればキャンセル
+      timerJob?.cancel()
+      timerJob = coroutineScope.launch {
+        delay(100000)
+        println("[DEBUG] タイマーが終了。待機プレイヤー: ${waitingPlayers.map { it.hashCode() }}")
+        println("[INFO] タイマーが終了。待機プレイヤー数: ${waitingPlayers.size}")
 
-      mutex.withLock {
-        // 待機リストが空でない場合
-        if (waitingPlayers.isNotEmpty()) {
-          // 現在の待機リストをコピー
-          val playersToStart = waitingPlayers.toList()
-          // 待機リストをクリア
-          waitingPlayers.clear()
-          startGame(playersToStart)
+        mutex.withLock {
+          if (waitingPlayers.isNotEmpty()) {
+            val playersToStart = waitingPlayers.take(5)
+            waitingPlayers.removeAll(playersToStart)
+            startGame(playersToStart)
+          }
         }
       }
     }
