@@ -1,7 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 
-import { PORT } from '../../../utils/siteSetting';
+import { MetaData } from '../../../components/MetaData';
+import { PORT, SITE_NAME, SITE_URL } from '../../../utils/siteSetting';
 
 export const Route = createFileRoute('/room/$roomId/')({
   component: RouteComponent,
@@ -9,6 +10,10 @@ export const Route = createFileRoute('/room/$roomId/')({
 
 function RouteComponent() {
   const { roomId } = Route.useParams();
+  const title = `ルーム:${roomId} | ${SITE_NAME}`;
+  const description = 'ルームに入室しました。ゲームを楽しんでください。';
+  const url = `${SITE_URL}/room/${roomId}`;
+
   const socketRef = useRef<WebSocket | null>(null);
   const [question, setQuestion] = useState('');
 
@@ -38,6 +43,7 @@ function RouteComponent() {
 
   return (
     <>
+      <MetaData title={title} description={description} url={url} />
       <div>{question}</div>
     </>
   );
