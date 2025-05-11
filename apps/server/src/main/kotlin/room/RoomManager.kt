@@ -37,7 +37,7 @@ class Room {
     players.add(session)
     println("[INFO] プレイヤーが追加されました。現在のプレイヤー数: ${players.size}")
     // Roomの問題番号をPlayerにおくる
-    session.send(Frame.Text(sharedRandomNumbers.joinToString(", ")))
+    session.send("""{"type": "question", "content": "${sharedRandomNumbers.joinToString(", ")}"}""")
   }
 
   fun removePlayer(session: WebSocketSession) {
