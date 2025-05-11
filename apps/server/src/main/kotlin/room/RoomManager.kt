@@ -47,50 +47,9 @@ class Room {
     println("[INFO] プレイヤーが削除されました。現在のプレイヤー数: ${players.size}")
   }
 
-  fun setHand(session: WebSocketSession, hand: String) {
-    println("[DEBUG] プレイヤー ${session.hashCode()} の手を設定しています: $hand")
-    hands[session] = hand
-    println("[INFO] 手が設定されました。現在の手の数: ${hands.size}/${players.size}")
-  }
-
   fun isEmpty(): Boolean {
     val empty = players.isEmpty()
     println("[DEBUG] ルームの空チェック結果: $empty")
     return empty
-  }
-
-  suspend fun notifyOtherPlayers(sender: WebSocketSession, message: String) {
-    println("[DEBUG] 送信者 ${sender.hashCode()} から他のプレイヤーに通知しています")
-    val otherPlayers = players.filter { it != sender }
-    println("[INFO] ${otherPlayers.size} 人の他のプレイヤーにメッセージを送信しています")
-
-    otherPlayers.forEach { player ->
-      try {
-        player.send(Frame.Text(message))
-      } catch (e: Exception) {
-        println("[ERROR] プレイヤー ${player.hashCode()} へのメッセージ送信中にエラーが発生しました: ${e.message}")
-      }
-    }
-  }
-
-  suspend fun checkAndJudge() {
-    println("[DEBUG] 全プレイヤーが手を提出したか確認しています: ${hands.size}/${players.size}")
-    if (hands.size == players.size) {
-      println("[INFO] 全プレイヤーが手を提出しました。結果を計算しています...")
-      val results = hands.entries.joinToString { "${it.key.hashCode()} -> ${it.value}" }
-      println("[DEBUG] 結果: $results")
-
-      players.forEach { player ->
-        try {
-          player.send(Frame.Text("結果: $results"))
-        } catch (e: Exception) {
-          println("[ERROR] プレイヤー ${player.hashCode()} への結果送信中にエラーが発生しました: ${e.message}")
-        }
-      }
-      hands.clear()
-      println("[INFO] 結果が全プレイヤーに送信され、手がクリアされました")
-    } else {
-      println("[INFO] より多くのプレイヤーが手を提出するのを待っています: ${hands.size}/${players.size}")
-    }
   }
 }
