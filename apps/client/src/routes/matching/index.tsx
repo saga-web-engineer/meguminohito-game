@@ -54,9 +54,7 @@ function RouteComponent() {
       }
     };
 
-    socket.onerror = (error) => {
-      console.error('[ERROR] WebSocket error:', error);
-    };
+    socket.onerror = (error) => console.error('[ERROR] WebSocket error:', error);
 
     return () => {
       console.log('[INFO] WebSocket disconnected');
